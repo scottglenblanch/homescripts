@@ -1,0 +1,23 @@
+#!/bin/bash
+trash_location=""
+
+set_vars() {
+  trash_location="${HOME}/.Trash"
+}
+
+move_thing_to_trash() {
+  thing_name="$1"
+  thing_new_name="${thing_name}: deleted-time-in-seconds: $(date +%s)"
+
+  mv "${thing_name}" "${trash_location}/${thing_new_name}"
+}
+
+run() {
+  for thing in "$@"
+  do
+    move_thing_to_trash "$thing"
+  done
+}
+
+set_vars "$@"
+run "$@"

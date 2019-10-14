@@ -1,4 +1,0 @@
-#!/bin/bash
-source $MODULAR_BASHING_BIN_DIR/setup.shell
-
-mv "$@" ~/.Trash
