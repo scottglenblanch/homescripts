@@ -1,180 +1,44 @@
 #!/bin/bash
 
 SCRIPT_DIR=""
-MODULAR_BASHING_DIR=""
+ROOT_BASH_DIR=""
+ROOT_ENVVARS_DIR=""
+ROOT_ALIASES_DIR=""
+ROOT_BIN_DIR=""
 HOME_DIR=""
+RC_FILE_MESSAGE=""
 
-is_valid_variable() {
-	param="$1"
-	if [ "$param" == "" ];
-	then
-		echo "false"
-	else
-		echo "true"
-	fi
-}
-
-has_valid_variables() {
-
-	for param in "$SCRIPT_DIR" "$MODULAR_BASHING_DIR" "$HOME_DIR"
+is_valid() {
+	for param in \
+		"${SCRIPT_DIR}" \
+		"${MODULAR_BASHING_DIR}" \
+		"${HOME_DIR}" 
 	do
-		if [ "$(is_valid_variable "$param")" == "false" ];
+		if [ -z "${param}" ];
 		then
-			echo "false"
-			exit 1
+			return false
 		fi
 	done
-	echo "true"
+	return true
 }
 
 set_variables() {
-	SCRIPT_DIR=$1
-	MODULAR_BASHING_DIR=$2
-	HOME_DIR=$3
+	DOUBLE_SLASHES='//'
+	SINGLE_SLASH='/'
+
+	SCRIPT_DIR="${1//${DOUBLE_SLASHES}/${SINGLE_SLASH}}"
+	ROOT_BASH_DIR="${2//${DOUBLE_SLASHES}/${SINGLE_SLASH}}"
+	HOME_DIR="${3//${DOUBLE_SLASHES}/${SINGLE_SLASH}}"
+	RC_FILE_MESSAGE="
+export ROOT_ENVVARS_DIR=${ROOT_BASH_DIR}/envvars
+export ROOT_ALIASES_DIR=${ROOT_BASH_DIR}/aliases
+export ROOT_BIN_DIR=${ROOT_BASH_DIR}/bin
+"
 }
 
-get_cur_shell() {
-	echo -e "$SHELL"
+run() {
+	set_variables "$1" "$2" "$3"
+	echo "${RC_FILE_MESSAGE}" >> "${HOME_DIR}/.bashrc"
 }
 
-get_zsh_shell_location() {
-	echo -e "/bin/zsh"
-}
-
-get_bin_shell_location() {
-	echo -e "/bin/bash"
-}
-
-get_zsh_file_name() {
-	echo -e ".zshrc"
-}
-
-get_bin_file_name() {
-	echo -e ".bashrc"
-}
-
-get_initialize_shell_command() {
-	set_modular_bashing_envvar="export MODULAR_BASHING_DIR=$MODULAR_BASHING_DIR"
-	source_setup_shell_command="source \$MODULAR_BASHING_DIR/bin/setup.shell"
-	echo -e "$set_modular_bashing_envvar\n$source_setup_shell_command"
-}
-
-get_rc_file_name() {
-	cur_shell="$(get_cur_shell)"
-
-	if [ "$cur_shell" = "" ];
-	then
-		rc_file_name=""
-	elif [ "$cur_shell" = "$(get_zsh_shell_location)" ]
-	then
-		rc_file_name="$(get_zsh_file_name)"
-	elif [ "$cur_shell" = "$(get_bin_shell_location)" ]
-	then
-		rc_file_name="$(get_bin_file_name)"
-	fi
-
-	echo -e "$rc_file_name"
-}
-
-has_valid_shell() {
-	if [ "$(get_rc_file_name)" == "" ];
-	then
-		echo "false"
-	else
-		echo "true"
-	fi
-}
-
-get_rc_file_path() {
-	echo -e "$HOME_DIR/$(get_rc_file_name)"
-}
-
-is_file_without_initialize_shell_command() {
-	if [ "$(cat "$(get_rc_file_path)" | grep "$(get_initialize_shell_command)")" == "" ];
-	then
-		echo -e "true"
-	else
-		echo -e "false"
-	fi
-}
-
-is_add_initialize_shell_command_to_rc_file() {
-
-	if [ "$(is_file_without_initialize_shell_command)" == "true"  ];
-	then
-		echo "true"
-	else
-		echo "false"
-	fi
-}
-
-add_initialize_shell_command() {
-	initialize_shell_command="$(get_initialize_shell_command)"
-	rc_file_path="$(get_rc_file_path)"
-
-
-	echo -e "adding \n\n\$initialize_shell_command\n\n to file \n\n$rc_file_path\n\n"
-	echo -e "$initialize_shell_command" >> "$rc_file_path"
-}
-
-run_setup_wiring() {
-	echo -e "Setting up Wiring"
-
-	add_initialize_shell_command
-}
-
-is_run_setup_wiring() {
-	if [ "$(has_valid_variables)" == "true" ] \
-		&& [ "$(has_valid_shell)" == "true" ] \
-		&& [ "$(is_add_initialize_shell_command_to_rc_file)" == "true" ];
-	then
-		echo "true"
-	else
-		echo "false"
-	fi
-}
-
-handle_invalid_variables() {
-	echo -e "issue with parameters in setup.wiring\n\$1 is path $SCRIPT_DIR\n\$2 is path to $MODULAR_BASHING_DIR\n\$3 is path to $HOME_DIR"
-	exit 1
-}
-
-handle_invalid_shell() {
-	echo -e "issue with shell. \$SHELL currently is $SHELL. \$SHELL variable needs to be coming from either /bin/zsh or /bin/bash. "
-	exit 1
-}
-
-handle_unseen_case() {
-	echo -e "there is an unforeseen case in setup.wiring"
-}
-
-handle_dont_add_initialize_shell_command() {
-	echo -e "\n\n$(get_rc_file_path) already has command \n\n$(get_initialize_shell_command)\n\n"
-}
-
-handle_other_cases() {
-	if [ "$(has_valid_variables)" == "false" ];
-	then
-		handle_invalid_variables
-	elif [ "$(has_valid_shell)" == "false" ];
-	then
-		handle_invalid_shell
-	elif [ "$(is_add_initialize_shell_command_to_rc_file)" == "false" ];
-	then
-		handle_dont_add_initialize_shell_command
-	else
-		handle_unseen_case
-	fi
-}
-
-run_script() {
-	if [ "$(is_run_setup_wiring)" == "true" ];
-	then
-		run_setup_wiring
-	else
-		handle_other_cases
-	fi
-}
-
-set_variables "$1" "$2" "$3"
-run_script
+run "$@"

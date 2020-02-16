@@ -92,17 +92,18 @@ run_setup_wiring() {
 }
 
 setup() {
+	# need to setup environment variables before the others
+	run_setup_envvars
 	run_setup_aliases
 	run_setup_bin
-	run_setup_envvars
 	run_setup_wiring
 }
 
-run_script() {
+run() {
 	show_initial_message
 	set_needed_variables
 	create_modular_bashing_directory
 	setup
 }
 
-run_script
+run
